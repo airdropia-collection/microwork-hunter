@@ -2,13 +2,19 @@
 Base Platform Class
 Common functionality for all microwork platforms
 """
+from __future__ import annotations
+
 import json
-import time
 import random
+import time
 from abc import ABC, abstractmethod
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import List, Dict, Any, Optional
-from dataclasses import dataclass, asdict
+from typing import Any, Dict, List, Optional
+
+from src.utils.logger import get_logger
+
+log = get_logger("platforms.base")
 
 
 @dataclass
@@ -24,8 +30,8 @@ class MicroworkTask:
     estimated_time: int
     difficulty: str
     url: str
-    requirements: List[str] = None
-    tags: List[str] = None
+    requirements: Optional[List[str]] = None
+    tags: Optional[List[str]] = None
     screenshot: Optional[str] = None
 
     def __post_init__(self):
@@ -55,13 +61,27 @@ class BasePlatform(ABC):
         """Random delay to appear human"""
         time.sleep(random.uniform(min_sec, max_sec))
 
-    def _take_screenshot(self, name: str) -> str:
-        """Take screenshot for evidence"""
-        if self.page:
-            path = self.evidence_dir / f"{name}.png"
+    def _take_screenshot(self, name: str) -> Optional[str]:
+        """Take screenshot for evidence.
+
+        Returns the path to the screenshot, or None if screenshots are
+        not supported (e.g. Obscura browser has no paint engine) or if
+        the screenshot fails for any other reason. Never raises —
+        screenshots are best-effort evidence, not critical path.
+        """
+        if not self.page:
+            return None
+        path = self.evidence_dir / f"{name}.png"
+        try:
             self.page.screenshot(path=str(path), full_page=True)
             return str(path)
-        return None
+        except Exception as exc:  # noqa: BLE001
+            log.debug(
+                "screenshot '%s' skipped (browser may not support it): %s",
+                name,
+                exc,
+            )
+            return None
 
     def start_browser(self):
         """Start browser with cookies"""
