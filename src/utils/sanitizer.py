@@ -11,10 +11,10 @@ from typing import Any
 
 # Patterns that should never appear in logs
 _SECRET_PATTERNS = [
-    # GitHub PATs (classic + fine-grained)
-    re.compile(r"gh[pousr]_[A-Za-z0-9]{36,255}", re.IGNORECASE),
-    re.compile(r"github_pat_[A-Za-z0-9_]{22,255}", re.IGNORECASE),
-    # Long hex/base64 tokens (>= 32 chars, looks like a token)
+    # GitHub PATs (classic + fine-grained) — match prefix + anything that looks like a token
+    re.compile(r"gh[pousr]_[A-Za-z0-9]+", re.IGNORECASE),
+    re.compile(r"github_pat_[A-Za-z0-9_]+", re.IGNORECASE),
+    # Long hex/base64 tokens (>= 40 chars, looks like a token, no spaces)
     re.compile(r"\b[A-Za-z0-9+/=_-]{40,}\b"),
     # Email addresses
     re.compile(r"\b[\w.+-]+@[\w-]+\.[\w.-]+\b"),

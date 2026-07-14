@@ -150,6 +150,7 @@ jobs:
           path: |
             evidence/
             tasks_found.json
+            tasks_queue/
             result_*.json
             review_package.json
             earnings.json

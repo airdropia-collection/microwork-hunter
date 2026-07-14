@@ -8,20 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `src/utils/logger.py` — centralized logging configuration with rich console output
-- `src/utils/health.py` — startup health-check CLI (`python -m src.utils.health`)
-- `src/utils/state.py` — task deduplication via `task_state.json`
-- `src/utils/sanitizer.py` — secret sanitizer for safe error logging
-- Tenacity-based retry decorators for all network calls
-- Config validation at startup — fails fast with clear errors if required secrets missing
-- SECURITY.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md, CODEOWNERS
-- Issue templates: bug report, feature request, platform support
-- Pull request template
-- GitHub Actions: 4-hourly Hunter + Review Response Bot + CI on every PR
-- Branch protection on `main` (CI must pass, no force push)
-- Dependabot + automated security fixes enabled
+- **`src/utils/task_filter.py`** — smart task filter with blacklist/whitelist patterns
+  - Rejects tasks requiring manual user action (app installs, phone/SMS verification,
+    email/Gmail sign-ups, credit card entry, KYC, address forms, referrals)
+  - Allows PTC ads, video watching, surveys, content engagement, daily challenges
+  - Returns `FilterDecision` with `allowed`, `reason`, `confidence`, `matched_*`
+  - Text normalisation (underscores → spaces) so `phone_number` matches `phone number` pattern
+- **`tasks_queue/` folder** — each discovered task saved as individual JSON file
+  for granular pickup by the executor
+- **21 new tests** for the task filter (blocklist + allowlist + edge cases)
+- `discover.py` now applies the filter automatically (use `--no-filter` to skip)
+- `cookies/README.md` rewritten — explicit **JSON-only** format requirement,
+  step-by-step Cookie-Editor guide, common-issues troubleshooting table
 
 ### Changed
+- `discover.py` accepts new flags: `--no-filter`, `--no-queue`, `--state-file`
+- `discovery_log.json` now includes `rejected_by_filter` count
+- `FilterDecision.to_dict()` for safe JSON serialisation
 - Replaced all `print()` calls with `logging` module throughout `src/`
 - `src/utils/ai_helper.py` now lazy-imports Gemini/Groq (graceful degradation when optional deps missing)
 - `src/workers/executor.py` now accepts both single-task dict and list of tasks
