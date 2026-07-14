@@ -83,6 +83,40 @@ class BasePlatform(ABC):
             )
             return None
 
+    def _save_page_html(self, name: str) -> Optional[str]:
+        """Save current page HTML for debugging.
+
+        Useful when screenshots aren't supported (Obscura). The HTML
+        lets us see whether cookies authenticated (dashboard HTML) or
+        we were redirected to a login page.
+        """
+        if not self.page:
+            return None
+        path = self.evidence_dir / f"{name}.html"
+        try:
+            html = self.page.content()
+            # Truncate to 200KB to avoid huge artifacts
+            if len(html) > 200_000:
+                html = html[:200_000] + "\n<!-- truncated -->"
+            path.write_text(html, encoding="utf-8")
+            return str(path)
+        except Exception as exc:  # noqa: BLE001
+            log.debug("save_page_html '%s' failed: %s", name, exc)
+            return None
+
+    def _log_page_info(self, label: str) -> None:
+        """Log current URL + title for debugging discovery failures."""
+        if not self.page:
+            return
+        try:
+            url = self.page.url
+            title = self.page.title()
+            log.info("[%s] url=%s title=%s", label, url, title[:80])
+            # Save HTML for offline debugging
+            self._save_page_html(f"{label}_page")
+        except Exception as exc:  # noqa: BLE001
+            log.debug("log_page_info '%s' failed: %s", label, exc)
+
     def start_browser(self):
         """Start browser with cookies"""
         from src.browser import get_browser

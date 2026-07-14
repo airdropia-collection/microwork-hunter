@@ -87,10 +87,11 @@ class RewardJoyPlatform(BasePlatform):
         try:
             self.page.goto(f"{self.base_url}/ads", timeout=20000)
             self._human_delay(2, 4)
-            self._take_screenshot("ptc_ads_page")
+            self._log_page_info("rewardjoy_ads")
             ad_items = self.page.locator(
                 ".ad-item, [class*='ad'], .ptc-item, .ads-item"
             ).all()
+            log.info("rewardjoy: found %d ad item(s)", len(ad_items))
 
             for i, ad in enumerate(ad_items[:20]):
                 try:

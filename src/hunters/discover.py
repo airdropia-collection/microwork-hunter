@@ -196,7 +196,9 @@ def main() -> int:
         len(tasks),
         rejected_count,
     )
-    return 0 if tasks else 1
+    # Exit 0 even if 0 tasks found — empty discovery is not a failure,
+    # it just means no new tasks were available this run.
+    return 0
 
 
 if __name__ == "__main__":

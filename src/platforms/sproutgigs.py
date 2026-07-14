@@ -1,10 +1,16 @@
 """
 SproutGigs Platform Hunter
 """
+from __future__ import annotations
+
 import re
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 from src.config import CONFIG
+from src.utils.logger import get_logger
 from .base import BasePlatform, MicroworkTask
+
+log = get_logger("platforms.sproutgigs")
 
 
 class SproutGigsPlatform(BasePlatform):
@@ -24,10 +30,11 @@ class SproutGigsPlatform(BasePlatform):
         try:
             self.page.goto(f"{self.base_url}/micro-jobs", timeout=20000)
             self._human_delay(3, 5)
-            self._take_screenshot("jobs_page")
+            self._log_page_info("sproutgigs_jobs")
 
             # Extract job cards
             job_cards = self.page.locator(".job-card, [class*='job'], .task-item").all()
+            log.info("sproutgigs: found %d job card(s)", len(job_cards))
 
             for i, card in enumerate(job_cards[:15]):
                 try:

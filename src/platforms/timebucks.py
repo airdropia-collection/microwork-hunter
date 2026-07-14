@@ -1,11 +1,16 @@
-
 """
 TimeBucks Platform Hunter
 """
+from __future__ import annotations
+
 import re
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 from src.config import CONFIG
+from src.utils.logger import get_logger
 from .base import BasePlatform, MicroworkTask
+
+log = get_logger("platforms.timebucks")
 
 
 class TimeBucksPlatform(BasePlatform):
@@ -32,7 +37,9 @@ class TimeBucksPlatform(BasePlatform):
         try:
             self.page.goto(f"{self.base_url}/publishers/index.php?pg=earn&tab=videos", timeout=20000)
             self._human_delay(2, 4)
+            self._log_page_info("timebucks_videos")
             video_items = self.page.locator(".video-item, [class*='video'], .task-row").all()
+            log.info("timebucks: found %d video item(s)", len(video_items))
 
             for i, video in enumerate(video_items[:10]):
                 try:

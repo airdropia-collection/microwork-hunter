@@ -84,10 +84,11 @@ class CointiplyPlatform(BasePlatform):
         try:
             self.page.goto(f"{self.base_url}/pages/ptc", timeout=20000)
             self._human_delay(2, 4)
-            self._take_screenshot("ptc_page")
+            self._log_page_info("cointiply_ptc")
             ad_items = self.page.locator(
                 ".ptc-ad-item, .ad-row, [class*='ptc'], .ad-card"
             ).all()
+            log.info("cointiply: found %d PTC ad item(s)", len(ad_items))
 
             for i, ad in enumerate(ad_items[:15]):
                 try:

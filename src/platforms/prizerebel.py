@@ -1,11 +1,16 @@
-
 """
 PrizeRebel Platform Hunter
 """
+from __future__ import annotations
+
 import re
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 from src.config import CONFIG
+from src.utils.logger import get_logger
 from .base import BasePlatform, MicroworkTask
+
+log = get_logger("platforms.prizerebel")
 
 
 class PrizeRebelPlatform(BasePlatform):
@@ -32,7 +37,9 @@ class PrizeRebelPlatform(BasePlatform):
         try:
             self.page.goto(f"{self.base_url}/members/surveys", timeout=20000)
             self._human_delay(2, 4)
+            self._log_page_info("prizerebel_surveys")
             survey_items = self.page.locator(".survey-card, [class*='survey'], .offer-item").all()
+            log.info("prizerebel: found %d survey item(s)", len(survey_items))
 
             for i, survey in enumerate(survey_items[:10]):
                 try:
