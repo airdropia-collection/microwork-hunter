@@ -1,5 +1,9 @@
-# Browser (for GitHub Actions - Obscura via Docker + Playwright CDP)
+# Browser (Playwright Chromium — primary, supports JS rendering)
 playwright>=1.40.0
+
+# Cloudflare/anti-bot bypass — patched Playwright fork
+# Drop-in replacement: `from patchright.sync_api import sync_playwright`
+patchright>=1.40.0
 
 # HTTP requests
 requests>=2.31.0

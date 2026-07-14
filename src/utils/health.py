@@ -154,7 +154,7 @@ def run_all_checks() -> List[Check]:
     checks: List[Check] = []
     checks.append(_check_llm_keys())
     checks.append(_check_browser())
-    for platform in ("sproutgigs", "rewardjoy", "timebucks", "prizerebel", "cointiply"):
+    for platform in ("sproutgigs", "rewardjoy", "timebucks", "cointiply"):
         checks.append(_check_cookie(platform))
     return checks
 

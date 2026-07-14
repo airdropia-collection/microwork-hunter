@@ -85,27 +85,16 @@ class RewardJoyPlatform(BasePlatform):
     # ------------------------------------------------------------------ #
     def _discover_ptc_ads(self):
         try:
-            # Try multiple possible PTC ad URLs — site was redesigned
-            # Old: /ads (returns 404 now)
-            # New: /surf-ads or /ptc-ads or dashboard
-            for path in ("/surf-ads", "/ptc-ads", "/ads", "/dashboard"):
-                try:
-                    self.page.goto(f"{self.base_url}{path}", timeout=20000)
-                    self._human_delay(2, 4)
-                    self._wait_for_cloudflare(timeout_sec=10)
-                    title = self.page.title().lower()
-                    # If we hit a 404 page, try next URL
-                    if "404" in title or "not found" in title:
-                        log.debug("rewardjoy: %s returned 404, trying next", path)
-                        continue
-                    self._log_page_info(f"rewardjoy_ads{path.replace('/', '_')}")
-                    break
-                except Exception:  # noqa: BLE001
-                    continue
+            # Correct URLs confirmed by user (site was redesigned)
+            # Old /ads returns 404 — new dashboard-based URLs
+            self.page.goto(f"{self.base_url}/dashboard/ads_surf", timeout=20000)
+            self._human_delay(2, 4)
+            self._wait_for_cloudflare(timeout_sec=10)
+            self._log_page_info("rewardjoy_ads_surf")
 
             ad_items = self.page.locator(
                 ".ad-item, [class*='ad'], .ptc-item, .ads-item, .surf-ad, "
-                "[class*='ptc'], [class*='surf']"
+                "[class*='ptc'], [class*='surf'], [class*='ads-surf']"
             ).all()
             log.info("rewardjoy: found %d ad item(s)", len(ad_items))
 
@@ -156,11 +145,14 @@ class RewardJoyPlatform(BasePlatform):
 
     def _discover_surveys(self):
         try:
-            self.page.goto(f"{self.base_url}/surveys", timeout=20000)
+            self.page.goto(f"{self.base_url}/dashboard/surveys", timeout=20000)
             self._human_delay(2, 4)
+            self._wait_for_cloudflare(timeout_sec=10)
+            self._log_page_info("rewardjoy_surveys")
             survey_items = self.page.locator(
                 ".survey-item, [class*='survey']"
             ).all()
+            log.info("rewardjoy: found %d survey item(s)", len(survey_items))
 
             for i, survey in enumerate(survey_items[:5]):
                 try:

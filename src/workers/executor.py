@@ -20,7 +20,6 @@ from typing import Any, Dict, List, Union
 from src.platforms.sproutgigs import SproutGigsPlatform
 from src.platforms.rewardjoy import RewardJoyPlatform
 from src.platforms.timebucks import TimeBucksPlatform
-from src.platforms.prizerebel import PrizeRebelPlatform
 from src.platforms.cointiply import CointiplyPlatform
 from src.platforms.base import MicroworkTask
 from src.utils.logger import get_logger
@@ -32,7 +31,6 @@ PLATFORM_MAP = {
     "sproutgigs": SproutGigsPlatform,
     "rewardjoy": RewardJoyPlatform,
     "timebucks": TimeBucksPlatform,
-    "prizerebel": PrizeRebelPlatform,
     "cointiply": CointiplyPlatform,
 }
 

@@ -36,10 +36,6 @@ class CookieValidator:
             "url": "https://timebucks.com",
             "login_indicator": "dashboard",
         },
-        "prizerebel": {
-            "url": "https://www.prizerebel.com",
-            "login_indicator": "members",
-        },
         "cointiply": {
             "url": "https://cointiply.com",
             "login_indicator": "dashboard",

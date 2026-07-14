@@ -21,7 +21,6 @@ from typing import Any, Dict, List
 from src.platforms.sproutgigs import SproutGigsPlatform
 from src.platforms.rewardjoy import RewardJoyPlatform
 from src.platforms.timebucks import TimeBucksPlatform
-from src.platforms.prizerebel import PrizeRebelPlatform
 from src.platforms.cointiply import CointiplyPlatform
 from src.utils.logger import get_logger
 from src.utils.state import TaskState
@@ -29,11 +28,13 @@ from src.utils.task_filter import TaskFilter
 
 log = get_logger("discover")
 
+# Note: PrizeRebel removed from PLATFORM_MAP — not available in Pakistan
+# (user location). Can be re-enabled by adding it back if user relocates
+# or uses a VPN.
 PLATFORM_MAP = {
     "sproutgigs": SproutGigsPlatform,
     "rewardjoy": RewardJoyPlatform,
     "timebucks": TimeBucksPlatform,
-    "prizerebel": PrizeRebelPlatform,
     "cointiply": CointiplyPlatform,
 }
 
@@ -108,7 +109,7 @@ def main() -> int:
     parser.add_argument(
         "--platform",
         default="all",
-        choices=["all", "sproutgigs", "rewardjoy", "timebucks", "prizerebel", "cointiply"],
+        choices=["all", "sproutgigs", "rewardjoy", "timebucks", "cointiply"],
     )
     parser.add_argument("--max-tasks", type=int, default=5)
     parser.add_argument(

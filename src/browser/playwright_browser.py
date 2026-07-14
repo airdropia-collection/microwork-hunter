@@ -1,26 +1,51 @@
 """
-Playwright Browser (Fallback / Primary for JS-heavy sites)
+Playwright Browser with Cloudflare bypass (via patchright)
 
-Standard Playwright with Chromium. Used as the primary browser for
-microwork platforms because:
-  - Obscura doesn't execute JavaScript (breaks SPA sites like RewardJoy)
-  - Playwright Chromium renders JS properly
-  - Supports screenshots (Obscura doesn't)
+Uses `patchright` — a patched fork of Playwright that:
+  - Spoofs browser fingerprint to bypass Cloudflare JS challenges
+  - Hides automation indicators (Runtime.enable, navigator.webdriver, etc.)
+  - Drop-in replacement: same API as playwright
 
-Architecture: same singleton pattern as ObscuraBrowser — a single
-Playwright instance is shared across all platform adapters to avoid
-the "sync API on sync scheduler" error.
+If patchright is not installed, falls back to standard playwright.
+
+Architecture: singleton pattern — a single Playwright/patchright instance
+is shared across all platform adapters to avoid the "sync API on sync
+scheduler" error.
+
+Why patchright over alternatives?
+  - patchright: Playwright fork, minimal code changes, actively maintained
+  - nodriver: by ultrafunkamsterdam, no Playwright API (CDP directly)
+  - FlareSolverr: separate Docker proxy, more complex setup
+  - cloudscraper: Python only, can't click buttons
+  - undetected-chromedriver: Selenium-based, slower
+
+patchright is the best free/open-source option for Cloudflare bypass
+with full browser automation (clicking, form filling, screenshots).
 """
 from __future__ import annotations
 
 from typing import Any, List, Optional
 
-from playwright.sync_api import sync_playwright
 from src.utils.logger import get_logger
 
 from .base_browser import BaseBrowser
 
 log = get_logger("browser.playwright")
+
+
+def _get_sync_playwright():
+    """Try patchright first (Cloudflare bypass), fall back to playwright."""
+    try:
+        from patchright.sync_api import sync_playwright as _sp
+        log.info("using patchright (Cloudflare bypass enabled)")
+        return _sp
+    except ImportError:
+        log.warning(
+            "patchright not installed — falling back to standard playwright "
+            "(Cloudflare challenges may not be bypassed)"
+        )
+        from playwright.sync_api import sync_playwright as _sp
+        return _sp
 
 
 class PlaywrightBrowser(BaseBrowser):
@@ -39,18 +64,20 @@ class PlaywrightBrowser(BaseBrowser):
         def start(self):
             if self.playwright is not None:
                 return  # already started
-            self.playwright = sync_playwright().start()
+            sp = _get_sync_playwright()
+            self.playwright = sp.start()
             args = [
                 "--disable-blink-features=AutomationControlled",
-                "--disable-web-security",
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
             ]
             self.browser = self.playwright.chromium.launch(
                 headless=True,
                 args=args,
             )
-            log.info("Playwright shared Chromium instance started")
+            log.info("Chromium instance started (patchright=%s)", "patchright" in str(sp).lower() or "yes")
 
         def stop(self):
             if self.browser:
@@ -76,7 +103,11 @@ class PlaywrightBrowser(BaseBrowser):
             import playwright  # noqa: F401
             return True
         except ImportError:
-            return False
+            try:
+                import patchright  # noqa: F401
+                return True
+            except ImportError:
+                return False
 
     def start(self, headless: bool = True, stealth: bool = True):
         # Initialise shared singleton
@@ -95,6 +126,15 @@ class PlaywrightBrowser(BaseBrowser):
             timezone_id="America/New_York",
             extra_http_headers={
                 "Accept-Language": "en-US,en;q=0.9",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                "Sec-Ch-Ua": '"Chromium";v="120", "Not_A Brand";v="8"',
+                "Sec-Ch-Ua-Mobile": "?0",
+                "Sec-Ch-Ua-Platform": '"Linux"',
+                "Sec-Fetch-Dest": "document",
+                "Sec-Fetch-Mode": "navigate",
+                "Sec-Fetch-Site": "none",
+                "Sec-Fetch-User": "?1",
+                "Upgrade-Insecure-Requests": "1",
             },
         )
 
@@ -102,7 +142,12 @@ class PlaywrightBrowser(BaseBrowser):
         if stealth:
             try:
                 self.context.add_init_script(
-                    "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+                    """
+                    Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+                    Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+                    Object.defineProperty(navigator, 'languages', {get: () => ['en-US', 'en']});
+                    window.chrome = { runtime: {} };
+                    """
                 )
             except Exception as exc:  # noqa: BLE001
                 log.debug("stealth init_script failed: %s", exc)
