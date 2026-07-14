@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Union
 
 from src.platforms.sproutgigs import SproutGigsPlatform
-from src.platforms.coinpayu import CoinPayuPlatform
+from src.platforms.rewardjoy import RewardJoyPlatform
 from src.platforms.timebucks import TimeBucksPlatform
 from src.platforms.prizerebel import PrizeRebelPlatform
 from src.platforms.cointiply import CointiplyPlatform
@@ -30,7 +30,7 @@ log = get_logger("executor")
 
 PLATFORM_MAP = {
     "sproutgigs": SproutGigsPlatform,
-    "coinpayu": CoinPayuPlatform,
+    "rewardjoy": RewardJoyPlatform,
     "timebucks": TimeBucksPlatform,
     "prizerebel": PrizeRebelPlatform,
     "cointiply": CointiplyPlatform,

@@ -25,9 +25,10 @@ body:
       options:
         - all
         - sproutgigs
-        - coinpayu
+        - rewardjoy
         - timebucks
         - prizerebel
+        - cointiply
         - not platform-specific
     validations:
       required: true

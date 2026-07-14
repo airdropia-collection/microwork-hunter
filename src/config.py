@@ -51,8 +51,18 @@ class Config:
         return self._decode_cookies("COOKIES_SPROUTGIGS")
 
     @property
+    def cookies_rewardjoy(self) -> List[Dict]:
+        """RewardJoy (formerly CoinPayu) cookies.
+        Tries COOKIES_REWARDJOY first, falls back to COOKIES_COINPAYU."""
+        cookies = self._decode_cookies("COOKIES_REWARDJOY")
+        if not cookies:
+            cookies = self._decode_cookies("COOKIES_COINPAYU")
+        return cookies
+
+    # Backward-compat alias
+    @property
     def cookies_coinpayu(self) -> List[Dict]:
-        return self._decode_cookies("COOKIES_COINPAYU")
+        return self.cookies_rewardjoy
 
     @property
     def cookies_timebucks(self) -> List[Dict]:

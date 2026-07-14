@@ -9,7 +9,7 @@ on:
         description: 'Platform'
         default: 'all'
         type: choice
-        options: [all, sproutgigs, coinpayu, timebucks, prizerebel, cointiply]
+        options: [all, sproutgigs, rewardjoy, timebucks, prizerebel, cointiply]
       dry_run:
         description: 'Dry Run (safe default)'
         default: true
@@ -64,7 +64,7 @@ jobs:
       - name: 🔐 Setup Cookies
         env:
           SPROUTGIGS: ${{ secrets.COOKIES_SPROUTGIGS }}
-          COINPAYU: ${{ secrets.COOKIES_COINPAYU }}
+          REWARDJOY: ${{ secrets.COOKIES_rewardjoy }}
           TIMEBUCKS: ${{ secrets.COOKIES_TIMEBUCKS }}
           PRIZEREBEL: ${{ secrets.COOKIES_PRIZEREBEL }}
           COINTIPLY: ${{ secrets.COOKIES_COINTIPLY }}
@@ -79,7 +79,7 @@ jobs:
           mkdir -p cookies
           for pair in \
             "sproutgigs:$SPROUTGIGS" \
-            "coinpayu:$COINPAYU" \
+            "rewardjoy:$REWARDJOY" \
             "timebucks:$TIMEBUCKS" \
             "prizerebel:$PRIZEREBEL" \
             "cointiply:$COINTIPLY" \

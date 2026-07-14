@@ -2,7 +2,7 @@
 
 from .base import BasePlatform, MicroworkTask
 from .sproutgigs import SproutGigsPlatform
-from .coinpayu import CoinPayuPlatform
+from .rewardjoy import RewardJoyPlatform
 from .timebucks import TimeBucksPlatform
 from .prizerebel import PrizeRebelPlatform
 from .cointiply import CointiplyPlatform
@@ -11,7 +11,7 @@ __all__ = [
     "BasePlatform",
     "MicroworkTask",
     "SproutGigsPlatform",
-    "CoinPayuPlatform",
+    "RewardJoyPlatform",
     "TimeBucksPlatform",
     "PrizeRebelPlatform",
     "CointiplyPlatform",

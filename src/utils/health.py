@@ -92,13 +92,37 @@ def _check_cookie(platform: str) -> Check:
     import os
     from pathlib import Path
 
+    # Special case: rewardjoy falls back to old coinpayu secret
+    if platform == "rewardjoy":
+        for env_var in ("COOKIES_REWARDJOY", "COOKIES_COINPAYU"):
+            if os.getenv(env_var):
+                return Check(
+                    f"cookies_{platform}",
+                    True,
+                    f"Cookies found via {env_var}",
+                    "info",
+                )
+        for fname in ("rewardjoy_cookies.json", "coinpayu_cookies.json"):
+            if Path(f"cookies/{fname}").exists():
+                return Check(
+                    f"cookies_{platform}",
+                    True,
+                    f"Cookie file found: cookies/{fname}",
+                    "info",
+                )
+        return Check(
+            f"cookies_{platform}",
+            False,
+            "No cookies for rewardjoy — set COOKIES_REWARDJOY secret",
+            "warning",
+        )
+
     # Try CONFIG.cookies_<platform> first (works for sproutgigs/coinpayu/etc.)
     cookies = getattr(CONFIG, f"cookies_{platform}", None)
     if cookies is None:
-        # Cointiply and other platforms not yet on CONFIG — check env directly
         env_var = f"COOKIES_{platform.upper()}"
         if os.getenv(env_var):
-            cookies = [{"_source": "env"}]  # truthy placeholder
+            cookies = [{"_source": "env"}]
         elif Path(f"cookies/{platform}_cookies.json").exists():
             cookies = [{"_source": "file"}]
         else:
@@ -110,7 +134,6 @@ def _check_cookie(platform: str) -> Check:
             f"{len(cookies)} cookie(s) loaded for {platform}",
             "info",
         )
-    # Try file path
     cookie_file = Path(f"cookies/{platform}_cookies.json")
     if cookie_file.exists():
         return Check(
@@ -123,7 +146,7 @@ def _check_cookie(platform: str) -> Check:
         f"cookies_{platform}",
         False,
         f"No cookies for {platform} — set COOKIES_{platform.upper()} secret",
-        "warning",  # warning, not error — bot can still run for other platforms
+        "warning",
     )
 
 
@@ -131,7 +154,7 @@ def run_all_checks() -> List[Check]:
     checks: List[Check] = []
     checks.append(_check_llm_keys())
     checks.append(_check_browser())
-    for platform in ("sproutgigs", "coinpayu", "timebucks", "prizerebel", "cointiply"):
+    for platform in ("sproutgigs", "rewardjoy", "timebucks", "prizerebel", "cointiply"):
         checks.append(_check_cookie(platform))
     return checks
 

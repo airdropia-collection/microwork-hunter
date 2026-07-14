@@ -73,7 +73,7 @@ Every 4 hours (GitHub Actions cron):
 | Platform    | Task Types                          | Currency   | URL                          |
 |-------------|-------------------------------------|------------|------------------------------|
 | SproutGigs  | Micro Jobs, Surveys, Offers         | USD        | https://sproutgigs.com       |
-| CoinPayu    | PTC Ads, Offers, Surveys            | Satoshi    | https://www.coinpayu.com     |
+| RewardJoy   | PTC Ads, Surveys                   | Satoshi    | https://www.rewardjoy.com    |
 | TimeBucks   | Videos, Surveys, Content engagement | USD        | https://timebucks.com        |
 | PrizeRebel  | Surveys, Offers, Daily Challenges   | Points     | https://www.prizerebel.com   |
 
@@ -98,7 +98,7 @@ Go to **Repo → Settings → Secrets and variables → Actions → New reposito
 | `GROQ_API_KEY`        | ❌ Optional | https://console.groq.com/ (1M tok/day fallback)  |
 | `LTC_ADDRESS`         | ❌ Optional | Your Binance LTC deposit address                 |
 | `COOKIES_SPROUTGIGS`  | ✅ Yes   | Base64-encoded cookies JSON (see below)            |
-| `COOKIES_COINPAYU`    | ✅ Yes   | Base64-encoded cookies JSON                         |
+| `COOKIES_REWARDJOY`   | ✅ Yes   | Base64-encoded cookies JSON                         |
 | `COOKIES_TIMEBUCKS`   | ✅ Yes   | Base64-encoded cookies JSON                         |
 | `COOKIES_PRIZEREBEL`  | ✅ Yes   | Base64-encoded cookies JSON                         |
 
@@ -202,7 +202,7 @@ cp .env.example .env
 
 # 4. Put cookies locally (alternative to secrets)
 mkdir -p cookies
-# place sproutgigs_cookies.json, coinpayu_cookies.json, etc. here
+# place sproutgigs_cookies.json, rewardjoy_cookies.json, etc. here
 
 # 5. Run tests
 pytest -v

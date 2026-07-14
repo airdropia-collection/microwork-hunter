@@ -65,7 +65,7 @@ Save the JSON content to a file named exactly:
 | Platform | Filename |
 |----------|----------|
 | SproutGigs | `sproutgigs_cookies.json` |
-| CoinPayu | `coinpayu_cookies.json` |
+| RewardJoy | `rewardjoy_cookies.json` |
 | TimeBucks | `timebucks_cookies.json` |
 | PrizeRebel | `prizerebel_cookies.json` |
 
@@ -103,7 +103,7 @@ For local development, you can skip the base64 encoding and just place the JSON 
 microwork-hunter/
 └── cookies/
     ├── sproutgigs_cookies.json
-    ├── coinpayu_cookies.json
+    ├── rewardjoy_cookies.json
     ├── timebucks_cookies.json
     └── prizerebel_cookies.json
 ```
@@ -143,7 +143,7 @@ Or trigger the Hunter workflow on GitHub Actions and check the "Validate Cookies
 Cookies expire. Recommended refresh cadence:
 
 - **SproutGigs:** every 7 days
-- **CoinPayu:** every 7 days
+- **RewardJoy:** every 7 days
 - **TimeBucks:** every 10 days
 - **PrizeRebel:** every 14 days
 

@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from src.platforms.sproutgigs import SproutGigsPlatform
-from src.platforms.coinpayu import CoinPayuPlatform
+from src.platforms.rewardjoy import RewardJoyPlatform
 from src.platforms.timebucks import TimeBucksPlatform
 from src.platforms.prizerebel import PrizeRebelPlatform
 from src.platforms.cointiply import CointiplyPlatform
@@ -31,7 +31,7 @@ log = get_logger("discover")
 
 PLATFORM_MAP = {
     "sproutgigs": SproutGigsPlatform,
-    "coinpayu": CoinPayuPlatform,
+    "rewardjoy": RewardJoyPlatform,
     "timebucks": TimeBucksPlatform,
     "prizerebel": PrizeRebelPlatform,
     "cointiply": CointiplyPlatform,
@@ -90,7 +90,7 @@ def main() -> int:
     parser.add_argument(
         "--platform",
         default="all",
-        choices=["all", "sproutgigs", "coinpayu", "timebucks", "prizerebel", "cointiply"],
+        choices=["all", "sproutgigs", "rewardjoy", "timebucks", "prizerebel", "cointiply"],
     )
     parser.add_argument("--max-tasks", type=int, default=5)
     parser.add_argument(

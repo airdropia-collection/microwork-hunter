@@ -28,8 +28,8 @@ class CookieValidator:
             "url": "https://sproutgigs.com",
             "login_indicator": "dashboard",
         },
-        "coinpayu": {
-            "url": "https://www.coinpayu.com",
+        "rewardjoy": {
+            "url": "https://www.rewardjoy.com",
             "login_indicator": "dashboard",
         },
         "timebucks": {
