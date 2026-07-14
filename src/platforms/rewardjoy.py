@@ -86,15 +86,28 @@ class RewardJoyPlatform(BasePlatform):
     def _discover_ptc_ads(self):
         try:
             # Correct URLs confirmed by user (site was redesigned)
-            # Old /ads returns 404 — new dashboard-based URLs
             self.page.goto(f"{self.base_url}/dashboard/ads_surf", timeout=20000)
             self._human_delay(2, 4)
             self._wait_for_cloudflare(timeout_sec=10)
+            # Wait for Vue app to mount — look for dashboard content
+            try:
+                self.page.wait_for_selector(
+                    ".dashboard-content, .ads-list, .surf-ads, "
+                    "[class*='ads-surf'], [class*='ptc-list'], main, "
+                    ".container-fluid, .row",
+                    timeout=15000,
+                )
+            except Exception as exc:  # noqa: BLE001
+                log.debug("rewardjoy: dashboard selector wait timed out: %s", exc)
+            # Extra wait for dynamic content
+            self._human_delay(3, 5)
             self._log_page_info("rewardjoy_ads_surf")
 
             ad_items = self.page.locator(
-                ".ad-item, [class*='ad'], .ptc-item, .ads-item, .surf-ad, "
-                "[class*='ptc'], [class*='surf'], [class*='ads-surf']"
+                ".ad-item, [class*='ad-card'], [class*='ads-card'], "
+                ".ptc-item, .ads-item, .surf-ad, [class*='ptc'], "
+                "[class*='surf-ad'], [class*='ad-row'], "
+                "[class*='ads-list'] > *, [class*='ptc-list'] > *"
             ).all()
             log.info("rewardjoy: found %d ad item(s)", len(ad_items))
 
