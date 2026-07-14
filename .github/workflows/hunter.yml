@@ -143,7 +143,7 @@ jobs:
           docker rm obscura || true
 
       - name: 📸 Upload Evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: evidence-${{ github.run_id }}
