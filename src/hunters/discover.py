@@ -62,9 +62,20 @@ def discover_platform(platform_name: str, max_tasks: int = 5) -> List[Dict[str, 
 
 def discover_all(max_tasks_per_platform: int = 5) -> List[Dict[str, Any]]:
     all_tasks: List[Dict[str, Any]] = []
-    for platform_name in PLATFORM_MAP:
-        tasks = discover_platform(platform_name, max_tasks_per_platform)
-        all_tasks.extend(tasks)
+    try:
+        for platform_name in PLATFORM_MAP:
+            tasks = discover_platform(platform_name, max_tasks_per_platform)
+            all_tasks.extend(tasks)
+    finally:
+        # Ensure the shared Obscura/Playwright instance is torn down
+        # even if one platform crashes mid-way.
+        try:
+            from src.browser.obscura_browser import ObscuraBrowser
+
+            ObscuraBrowser.shutdown_shared()
+        except Exception as exc:  # noqa: BLE001
+            log.debug("ObscuraBrowser.shutdown_shared() error: %s", exc)
+
     all_tasks.sort(
         key=lambda t: t.get("reward", 0) / max(t.get("estimated_time", 1), 1),
         reverse=True,
@@ -118,7 +129,16 @@ def main() -> int:
     if args.platform == "all":
         tasks = discover_all(args.max_tasks)
     else:
-        tasks = discover_platform(args.platform, args.max_tasks)
+        try:
+            tasks = discover_platform(args.platform, args.max_tasks)
+        finally:
+            # Tear down shared browser instance
+            try:
+                from src.browser.obscura_browser import ObscuraBrowser
+
+                ObscuraBrowser.shutdown_shared()
+            except Exception as exc:  # noqa: BLE001
+                log.debug("ObscuraBrowser.shutdown_shared() error: %s", exc)
 
     log.info("discovered %d raw task(s)", len(tasks))
 
