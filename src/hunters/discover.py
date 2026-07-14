@@ -67,14 +67,21 @@ def discover_all(max_tasks_per_platform: int = 5) -> List[Dict[str, Any]]:
             tasks = discover_platform(platform_name, max_tasks_per_platform)
             all_tasks.extend(tasks)
     finally:
-        # Ensure the shared Obscura/Playwright instance is torn down
+        # Ensure shared browser instances are torn down
         # even if one platform crashes mid-way.
-        try:
-            from src.browser.obscura_browser import ObscuraBrowser
-
-            ObscuraBrowser.shutdown_shared()
-        except Exception as exc:  # noqa: BLE001
-            log.debug("ObscuraBrowser.shutdown_shared() error: %s", exc)
+        for cls_name, cls in [
+            ("ObscuraBrowser", None),
+            ("PlaywrightBrowser", None),
+        ]:
+            try:
+                if cls_name == "ObscuraBrowser":
+                    from src.browser.obscura_browser import ObscuraBrowser
+                    ObscuraBrowser.shutdown_shared()
+                elif cls_name == "PlaywrightBrowser":
+                    from src.browser.playwright_browser import PlaywrightBrowser
+                    PlaywrightBrowser.shutdown_shared()
+            except Exception as exc:  # noqa: BLE001
+                log.debug("%s.shutdown_shared() error: %s", cls_name, exc)
 
     all_tasks.sort(
         key=lambda t: t.get("reward", 0) / max(t.get("estimated_time", 1), 1),
@@ -132,13 +139,17 @@ def main() -> int:
         try:
             tasks = discover_platform(args.platform, args.max_tasks)
         finally:
-            # Tear down shared browser instance
-            try:
-                from src.browser.obscura_browser import ObscuraBrowser
-
-                ObscuraBrowser.shutdown_shared()
-            except Exception as exc:  # noqa: BLE001
-                log.debug("ObscuraBrowser.shutdown_shared() error: %s", exc)
+            # Tear down shared browser instances
+            for cls_name in ("ObscuraBrowser", "PlaywrightBrowser"):
+                try:
+                    if cls_name == "ObscuraBrowser":
+                        from src.browser.obscura_browser import ObscuraBrowser
+                        ObscuraBrowser.shutdown_shared()
+                    elif cls_name == "PlaywrightBrowser":
+                        from src.browser.playwright_browser import PlaywrightBrowser
+                        PlaywrightBrowser.shutdown_shared()
+                except Exception as exc:  # noqa: BLE001
+                    log.debug("%s.shutdown_shared() error: %s", cls_name, exc)
 
     log.info("discovered %d raw task(s)", len(tasks))
 

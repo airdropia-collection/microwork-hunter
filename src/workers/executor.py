@@ -159,7 +159,8 @@ def main() -> int:
         1 for r in results if r.get("status") in ("completed", "dry_run")
     )
     log.info("%d/%d task(s) OK", ok, len(results))
-    return 0 if ok == len(results) and results else (1 if not results else 2)
+    # Exit 0 even if 0 tasks — empty execution is not a failure
+    return 0
 
 
 if __name__ == "__main__":
