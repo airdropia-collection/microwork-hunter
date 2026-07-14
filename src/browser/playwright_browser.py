@@ -64,8 +64,10 @@ class PlaywrightBrowser(BaseBrowser):
         def start(self):
             if self.playwright is not None:
                 return  # already started
-            sp = _get_sync_playwright()
-            self.playwright = sp.start()
+            sp_func = _get_sync_playwright()
+            # sync_playwright is a function that returns a context manager
+            # Call it to get the PlaywrightContextManager, then .start() it
+            self.playwright = sp_func().start()
             args = [
                 "--disable-blink-features=AutomationControlled",
                 "--no-sandbox",
@@ -77,7 +79,7 @@ class PlaywrightBrowser(BaseBrowser):
                 headless=True,
                 args=args,
             )
-            log.info("Chromium instance started (patchright=%s)", "patchright" in str(sp).lower() or "yes")
+            log.info("Chromium instance started (patchright enabled)")
 
         def stop(self):
             if self.browser:
