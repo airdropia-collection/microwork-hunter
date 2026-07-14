@@ -160,7 +160,14 @@ class PlaywrightBrowser(BaseBrowser):
         return self.context.new_page()
 
     def goto(self, url: str, timeout: int = 30000):
-        self.page.goto(url, timeout=timeout, wait_until="domcontentloaded")
+        # Use 'load' instead of 'domcontentloaded' for SPAs that need
+        # more time to render. Then explicitly wait for network idle.
+        self.page.goto(url, timeout=timeout, wait_until="load")
+        # Give SPA frameworks (Vue/React) time to render
+        try:
+            self.page.wait_for_load_state("networkidle", timeout=10000)
+        except Exception as exc:  # noqa: BLE001
+            log.debug("networkidle wait failed (continuing): %s", exc)
 
     def click(self, selector: str):
         self.page.locator(selector).first.click()

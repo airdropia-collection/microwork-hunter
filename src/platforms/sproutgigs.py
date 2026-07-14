@@ -28,14 +28,37 @@ class SproutGigsPlatform(BasePlatform):
         self.tasks = []
 
         try:
-            self.page.goto(f"{self.base_url}/micro-jobs", timeout=20000)
-            self._human_delay(3, 5)
-            # Wait for Cloudflare JS challenge to resolve
-            self._wait_for_cloudflare(timeout_sec=15)
-            self._log_page_info("sproutgigs_jobs")
+            # Try multiple known SproutGigs URLs — site has been redesigned
+            # Old: /micro-jobs (returns "Page Not Found" now)
+            # Try dashboard-based URLs
+            for path in (
+                "/dashboard",
+                "/micro-jobs",
+                "/jobs",
+                "/tasks",
+                "/earn",
+            ):
+                try:
+                    self.page.goto(f"{self.base_url}{path}", timeout=20000)
+                    self._human_delay(3, 5)
+                    # Wait for Cloudflare JS challenge to resolve
+                    self._wait_for_cloudflare(timeout_sec=15)
+                    title = self.page.title().lower()
+                    if "not found" in title or "404" in title:
+                        log.debug("sproutgigs: %s returned 404, trying next", path)
+                        continue
+                    self._log_page_info(f"sproutgigs{path.replace('/', '_')}")
+                    break
+                except Exception as exc:  # noqa: BLE001
+                    log.debug("sproutgigs: %s failed: %s", path, exc)
+                    continue
 
-            # Extract job cards
-            job_cards = self.page.locator(".job-card, [class*='job'], .task-item").all()
+            # Extract job cards — try multiple selector patterns
+            job_cards = self.page.locator(
+                ".job-card, [class*='job'], .task-item, [class*='task'], "
+                "[class*='micro'], [class*='offer'], [class*='gig'], "
+                ".card, [data-job], [data-task]"
+            ).all()
             log.info("sproutgigs: found %d job card(s)", len(job_cards))
 
             for i, card in enumerate(job_cards[:15]):
