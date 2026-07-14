@@ -1,0 +1,202 @@
+name: 🤖 Microwork Hunter
+
+on:
+  schedule:
+    - cron: '0 */4 * * *'
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform'
+        default: 'all'
+        type: choice
+        options: [all, sproutgigs, coinpayu, timebucks, prizerebel]
+      dry_run:
+        description: 'Dry Run (safe default)'
+        default: true
+        type: boolean
+      max_tasks:
+        description: 'Max tasks per platform'
+        default: '5'
+
+# Prevent overlapping scheduled runs from clobbering each other.
+concurrency:
+  group: microwork-hunter-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  hunt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 🦀 Start Obscura Browser (Docker)
+        run: |
+          docker run -d --name obscura \
+            -p 127.0.0.1:9222:9222 \
+            h4ckf0r0day/obscura:latest
+
+          for i in {1..30}; do
+            if curl -s http://127.0.0.1:9222/json/version; then
+              echo "Obscura is up"
+              break
+            fi
+            sleep 1
+          done
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: 🔐 Setup Cookies
+        env:
+          SPROUTGIGS: ${{ secrets.COOKIES_SPROUTGIGS }}
+          COINPAYU: ${{ secrets.COOKIES_COINPAYU }}
+          TIMEBUCKS: ${{ secrets.COOKIES_TIMEBUCKS }}
+          PRIZEREBEL: ${{ secrets.COOKIES_PRIZEREBEL }}
+        run: |
+          mkdir -p cookies
+          for pair in \
+            "sproutgigs:$SPROUTGIGS" \
+            "coinpayu:$COINPAYU" \
+            "timebucks:$TIMEBUCKS" \
+            "prizerebel:$PRIZEREBEL"; do
+            name="${pair%%:*}"
+            b64="${pair#*:}"
+            if [ -n "$b64" ]; then
+              echo "$b64" | base64 -d > "cookies/${name}_cookies.json" \
+                && echo "decoded ${name} cookies" \
+                || echo "warn: failed to decode ${name} cookies"
+            else
+              echo "warn: no cookies provided for ${name}"
+            fi
+          done
+
+      - name: 🍪 Validate Cookies (non-blocking)
+        env:
+          BROWSER_TYPE: obscura
+          OBSCURA_PORT: 9222
+        continue-on-error: true
+        run: |
+          python -m src.utils.cookie_validator --platform all || true
+
+      - name: 🔍 Discover Tasks
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          BROWSER_TYPE: obscura
+          OBSCURA_PORT: 9222
+        run: |
+          python -m src.hunters.discover \
+            --platform "${{ github.event.inputs.platform || 'all' }}" \
+            --max-tasks "${{ github.event.inputs.max_tasks || '5' }}"
+
+      - name: 🎯 Execute Tasks
+        if: hashFiles('tasks_found.json') != ''
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          BROWSER_TYPE: obscura
+          OBSCURA_PORT: 9222
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
+        run: |
+          python -m src.workers.executor \
+            --task tasks_found.json \
+            --dry-run "$DRY_RUN"
+
+      - name: 📦 Compile Review Package
+        if: always()
+        run: |
+          python -m src.utils.review_compiler || true
+
+      - name: 💰 Update Earnings
+        if: always()
+        run: |
+          python -m src.utils.earnings_tracker --update || true
+
+      - name: 🛑 Stop Obscura
+        if: always()
+        run: |
+          docker stop obscura || true
+          docker rm obscura || true
+
+      - name: 📸 Upload Evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidence-${{ github.run_id }}
+          path: |
+            evidence/
+            tasks_found.json
+            result_*.json
+            review_package.json
+            earnings.json
+            cookies_valid.json
+            discovery_log.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: 🔔 Create Review Issue
+        if: hashFiles('review_package.json') != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('review_package.json', 'utf8'));
+
+            const pendingRows = pkg.pending.map(t => {
+              const id = t.task_id || t.id || 'unknown';
+              const plat = t.platform || '';
+              const type = t.type || '';
+              const reward = t.reward ?? '';
+              const cur = t.reward_currency || '';
+              const mins = t.estimated_time ?? '?';
+              return `| \`${id}\` | ${plat} | ${type} | ${reward} ${cur} | ${mins} |`;
+            }).join('\n');
+
+            const body = `## 🤖 Review Required — Run #${{ github.run_id }}
+
+            | Metric | Value |
+            |--------|-------|
+            | **Discovered** | ${pkg.discovered} |
+            | **Attempted** | ${pkg.attempted} |
+            | **Completed** | ${pkg.successful} |
+            | **Failed** | ${pkg.failed} |
+            | **Pending Review** | ${pkg.pending.length} |
+
+            ### ⏳ Pending Tasks
+            | ID | Platform | Type | Reward | Min |
+            |----|----------|------|--------|-----|
+            ${pendingRows || '_none_'}
+
+            ### ⚡ Actions
+            - \`/approve all\` — submit every pending task
+            - \`/approve <task-id> [<task-id>...]\` — submit specific tasks
+            - \`/reject <task-id> <reason>\` — reject a task
+            - \`/modify <task-id> <instructions>\` — request re-execution
+
+            > Run artifacts: [Actions run #${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            ---
+            *Triggered by: ${{ github.event_name }}*`;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🤖 Review: ${pkg.pending.length} task(s) | Run #${{ github.run_id }}`,
+              body: body,
+              labels: ['microwork-hunter', 'review-required']
+            });

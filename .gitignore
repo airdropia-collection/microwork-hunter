@@ -1,0 +1,60 @@
+# === Secrets & cookies (NEVER commit) ===
+cookies/*.json
+!cookies/README.md
+.env
+.secrets/
+*.pem
+*.key
+*pat*
+*token*
+
+# === Run artifacts (regenerated each run) ===
+evidence/
+reports/
+result_*.json
+tasks_found.json
+tasks_found_count.txt
+review_package.json
+review_result.json
+submission_results.json
+discovery_log.json
+earnings.json
+cookies_valid.json
+platforms_ready.txt
+
+# === Python ===
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+build/
+dist/
+.eggs/
+
+# === Virtual envs ===
+.venv/
+venv/
+env/
+ENV/
+
+# === Testing / coverage ===
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+.ruff_cache/
+
+# === IDE ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# === OS ===
+.DS_Store
+Thumbs.db
+desktop.ini
