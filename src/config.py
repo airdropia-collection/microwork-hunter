@@ -2,11 +2,17 @@
 Microwork Hunter Configuration
 Reads from environment variables / GitHub Secrets
 """
+from __future__ import annotations
+
 import os
 import base64
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Dict, Optional
+
+from src.utils.logger import get_logger
+
+log = get_logger("config")
 
 
 @dataclass
@@ -62,8 +68,8 @@ class Config:
         try:
             decoded = base64.b64decode(encoded).decode('utf-8')
             return json.loads(decoded)
-        except Exception as e:
-            print(f"⚠️ Failed to decode {env_var}: {e}")
+        except Exception as exc:  # noqa: BLE001
+            log.error("failed to decode %s: %s", env_var, exc)
             return []
 
     @property

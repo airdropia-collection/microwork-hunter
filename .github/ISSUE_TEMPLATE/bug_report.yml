@@ -1,0 +1,89 @@
+name: 🐛 Bug Report
+description: Report something that's broken
+title: "🐛 [BUG] <short summary>"
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug! Please fill out the sections below.
+        **Never paste real cookies, API keys, or PATs in this issue.** Replace them with `REDACTED`.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug. Include the expected vs actual behavior.
+      placeholder: "The Hunter workflow failed at the Discover Tasks step with..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Affected platform
+      options:
+        - all
+        - sproutgigs
+        - coinpayu
+        - timebucks
+        - prizerebel
+        - not platform-specific
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected component
+      options:
+        - Hunter workflow (discovery)
+        - Executor (task execution)
+        - Review bot (issue comment handling)
+        - Browser (Obscura/Playwright)
+        - AI helper (Gemini/Groq)
+        - Cookie validator
+        - Earnings tracker
+        - other
+    validations:
+      required: true
+
+  - type: input
+    id: run-url
+    attributes:
+      label: Workflow run URL (if applicable)
+      placeholder: https://github.com/airdropia-collection/microwork-hunter/actions/runs/...
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log excerpt
+      description: Paste the relevant log lines. **Redact** any cookies/tokens/PII.
+      render: shell
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+      description: Step-by-step so we can reproduce locally.
+      placeholder: |
+        1. Set BROWSER_TYPE=...
+        2. Run `python -m src.hunters.discover --platform ...`
+        3. ...
+
+  - type: input
+    id: version
+    attributes:
+      label: Microwork Hunter version
+      placeholder: "0.1.0"
+
+  - type: dropdown
+    id: dry-run
+    attributes:
+      label: Was this in dry-run mode?
+      options:
+        - "yes (dry_run=true)"
+        - "no (real submission)"
+        - not sure
+    validations:
+      required: true

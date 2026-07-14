@@ -1,0 +1,79 @@
+name: 🌐 New Platform Request
+description: Request support for a new microwork / GPT / PTC platform
+title: "🌐 [PLATFORM] Add support for <platform name>"
+labels: ["new-platform", "triage"]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Platform name
+      placeholder: "e.g. ySense, Picoworkers, Toloka, Swagbucks"
+    validations:
+      required: true
+
+  - type: input
+    id: url
+    attributes:
+      label: Platform URL
+      placeholder: "https://..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: task-types
+    attributes:
+      label: What task types does this platform offer?
+      multiple: true
+      options:
+        - Surveys
+        - PTC ads (paid-to-click)
+        - Microjobs / microtasks
+        - Offerwalls (app installs, signups)
+        - Video watching
+        - Content engagement (likes, follows)
+        - Referral bonuses
+        - Daily challenges
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: currency
+    attributes:
+      label: Payout currency
+      options:
+        - USD
+        - Points
+        - Satoshi / BTC
+        - Other crypto
+        - Gift cards
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: reward-range
+    attributes:
+      label: Typical reward range per task
+      placeholder: "$0.01 - $5 per survey, 100-500 points per offer, etc."
+
+  - type: textarea
+    id: anti-bot
+    attributes:
+      label: Known anti-bot measures
+      description: Help us understand what stealth is needed.
+      placeholder: "Cloudflare Turnstile, hCaptcha, device fingerprinting, IP-reputation checks, phone verification..."
+
+  - type: checkboxes
+    id: account
+    attributes:
+      label: I can provide
+      options:
+        - label: A test account (with cookies) for development
+        - label: Screenshots of the dashboard / task pages
+        - label: Documentation of the task discovery flow
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional notes

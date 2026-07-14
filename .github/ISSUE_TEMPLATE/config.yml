@@ -1,0 +1,17 @@
+## 🤖 About Microwork Hunter
+
+This repo is **NOT** for:
+- ❌ General questions about microwork platforms
+- ❌ Asking us to add your account / do tasks for you
+- ❌ Promoting other automation tools
+
+This repo **IS** for:
+- ✅ Bug reports about this bot's code
+- ✅ Feature requests for new platforms or anti-detection techniques
+- ✅ Security disclosures (use private advisory — see SECURITY.md)
+
+**Before opening an issue:**
+1. Search existing issues (open AND closed) for your problem
+2. Check the [discussions](https://github.com/airdropia-collection/microwork-hunter/discussions) — your question may already be answered
+3. Read [CHANGELOG.md](CHANGELOG.md) — your issue may be fixed in an unreleased version
+4. If you're filing a bug, have a workflow run URL ready

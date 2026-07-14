@@ -1,63 +1,103 @@
+"""
+Cookie Validator.
 
+Quickly checks whether the configured cookies for each platform are
+still valid by visiting the platform URL and looking for a
+login-indicator string in the resulting URL or page content.
+
+Run as:
+    python -m src.utils.cookie_validator --platform all
+
+Exits 0 if at least one platform validates, 1 otherwise.
 """
-Cookie Validator
-"""
-import json
+from __future__ import annotations
+
 import argparse
+import json
+import sys
 from pathlib import Path
-from src.browser import get_browser
+
+from src.utils.logger import get_logger
+
+log = get_logger("cookie_validator")
 
 
 class CookieValidator:
     PLATFORMS = {
-        'sproutgigs': {'url': 'https://sproutgigs.com', 'login_indicator': 'dashboard'},
-        'coinpayu': {'url': 'https://www.coinpayu.com', 'login_indicator': 'dashboard'},
-        'timebucks': {'url': 'https://timebucks.com', 'login_indicator': 'dashboard'},
-        'prizerebel': {'url': 'https://www.prizerebel.com', 'login_indicator': 'members'},
+        "sproutgigs": {
+            "url": "https://sproutgigs.com",
+            "login_indicator": "dashboard",
+        },
+        "coinpayu": {
+            "url": "https://www.coinpayu.com",
+            "login_indicator": "dashboard",
+        },
+        "timebucks": {
+            "url": "https://timebucks.com",
+            "login_indicator": "dashboard",
+        },
+        "prizerebel": {
+            "url": "https://www.prizerebel.com",
+            "login_indicator": "members",
+        },
     }
 
-    def validate_all(self):
+    def validate_all(self) -> dict:
         results = {}
         for name, config in self.PLATFORMS.items():
             results[name] = self._validate(name, config)
         return results
 
-    def _validate(self, name, config):
-        result = {'platform': name, 'valid': False, 'error': None}
+    def _validate(self, name: str, config: dict) -> dict:
+        result = {"platform": name, "valid": False, "error": None}
         try:
+            from src.browser import get_browser  # local import — heavy
+
             browser = get_browser()
             browser.start()
-            browser.goto(config['url'], timeout=15000)
-
-            current_url = browser.page.url if hasattr(browser, 'page') else ''
-            result['current_url'] = current_url
-            result['valid'] = config['login_indicator'] in current_url.lower()
-
-            browser.close()
-        except Exception as e:
-            result['error'] = str(e)
+            try:
+                browser.goto(config["url"], timeout=15000)
+                current_url = browser.page.url if hasattr(browser, "page") else ""
+                content = browser.content() if hasattr(browser, "content") else ""
+                result["current_url"] = current_url
+                indicator = config["login_indicator"].lower()
+                result["valid"] = indicator in current_url.lower() or indicator in content.lower()
+                log.info(
+                    "cookie check %s: valid=%s url=%s",
+                    name,
+                    result["valid"],
+                    current_url,
+                )
+            finally:
+                browser.close()
+        except Exception as exc:  # noqa: BLE001
+            result["error"] = str(exc)
+            log.error("cookie check %s failed: %s", name, exc)
         return result
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument('--platform', default='all')
+    parser.add_argument("--platform", default="all")
     args = parser.parse_args()
 
     validator = CookieValidator()
-    results = validator.validate_all() if args.platform == 'all' else {args.platform: validator._validate(args.platform, validator.PLATFORMS[args.platform])}
+    if args.platform == "all":
+        results = validator.validate_all()
+    else:
+        cfg = validator.PLATFORMS[args.platform]
+        results = {args.platform: validator._validate(args.platform, cfg)}
 
-    with open('cookies_valid.json', 'w') as f:
-        json.dump(results, f, indent=2)
+    Path("cookies_valid.json").write_text(
+        json.dumps(results, indent=2, default=str), encoding="utf-8"
+    )
 
-    ready = sum(1 for r in results.values() if r['valid'])
-    with open('platforms_ready.txt', 'w') as f:
-        f.write(str(ready))
+    ready = sum(1 for r in results.values() if r["valid"])
+    Path("platforms_ready.txt").write_text(str(ready), encoding="utf-8")
 
-    print(f"Validated: {ready}/{len(results)} platforms ready")
+    log.info("validated: %d/%d platforms ready", ready, len(results))
     return 0 if ready > 0 else 1
 
 
-if __name__ == '__main__':
-    import sys
+if __name__ == "__main__":
     sys.exit(main())

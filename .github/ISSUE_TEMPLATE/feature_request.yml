@@ -1,0 +1,50 @@
+name: ✨ Feature Request
+description: Suggest a new feature or improvement
+title: "✨ [FEATURE] <short summary>"
+labels: ["enhancement", "triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      placeholder: "I want to be notified instantly when a high-value task is found, but GitHub Issues can be slow..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: What solution would you like?
+      placeholder: "Add a Telegram bot that sends a push notification when a task with reward > $1 is discovered."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      placeholder: "Discord webhook, Slack integration, email..."
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Feature category
+      options:
+        - new platform
+        - anti-detection / stealth
+        - notifications (Telegram, Discord, email)
+        - AI / task understanding
+        - earnings / reporting / dashboard
+        - mobile control
+        - reliability / observability
+        - other
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: willing
+    attributes:
+      label: Willing to help?
+      options:
+        - label: I can help test this feature once implemented
+        - label: I can help write documentation for this feature

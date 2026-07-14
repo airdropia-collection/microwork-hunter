@@ -85,6 +85,15 @@ jobs:
             fi
           done
 
+      - name: 🩺 Health Check
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          BROWSER_TYPE: obscura
+          OBSCURA_PORT: 9222
+        run: |
+          python -m src.utils.health || true
+
       - name: 🍪 Validate Cookies (non-blocking)
         env:
           BROWSER_TYPE: obscura
@@ -146,6 +155,7 @@ jobs:
             earnings.json
             cookies_valid.json
             discovery_log.json
+            task_state.json
           if-no-files-found: ignore
           retention-days: 14
 

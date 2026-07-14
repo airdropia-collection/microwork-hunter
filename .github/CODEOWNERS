@@ -1,0 +1,20 @@
+# CODEOWNERS — https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Every PR that touches these paths will automatically request review
+# from the listed owners.
+
+# Default owner for the entire repo
+*                           @airdropia-collection
+
+# Security-critical files — extra scrutiny
+SECURITY.md                 @airdropia-collection
+.github/workflows/          @airdropia-collection
+src/config.py               @airdropia-collection
+src/utils/ai_helper.py      @airdropia-collection
+cookies/                    @airdropia-collection
+
+# Platform adapters — group by domain expertise
+src/platforms/              @airdropia-collection
+
+# Browser layer — stealth + anti-detection
+src/browser/                @airdropia-collection

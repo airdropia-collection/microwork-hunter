@@ -1,15 +1,13 @@
 """
-Task Execution Engine
+Task Execution Engine.
 
 Reads ``tasks_found.json`` (a list of task dicts, as produced by
 ``src.hunters.discover``) and runs each task through the matching
 platform adapter. Results are written as ``result_<task_id>.json``
 files so that ``src.utils.review_compiler`` can pick them up.
 
-Usage
------
-    python -m src.workers.executor --task tasks_found.json --dry-run true
-    python -m src.workers.executor --task result_pending.json --dry-run false
+After each task, ``TaskState.mark_done()`` is called so the next
+discovery run skips it.
 """
 from __future__ import annotations
 
@@ -24,7 +22,10 @@ from src.platforms.coinpayu import CoinPayuPlatform
 from src.platforms.timebucks import TimeBucksPlatform
 from src.platforms.prizerebel import PrizeRebelPlatform
 from src.platforms.base import MicroworkTask
+from src.utils.logger import get_logger
+from src.utils.state import TaskState
 
+log = get_logger("executor")
 
 PLATFORM_MAP = {
     "sproutgigs": SproutGigsPlatform,
@@ -37,7 +38,6 @@ PLATFORM_MAP = {
 def _coerce_to_task_list(payload: Union[Dict, List]) -> List[Dict[str, Any]]:
     """Accept either a single task dict or a list of task dicts."""
     if isinstance(payload, dict):
-        # Be permissive: a dict that *contains* a list under "tasks"
         if "tasks" in payload and isinstance(payload["tasks"], list):
             return payload["tasks"]
         return [payload]
@@ -49,14 +49,19 @@ def _coerce_to_task_list(payload: Union[Dict, List]) -> List[Dict[str, Any]]:
 class TaskExecutor:
     """Run discovered tasks against their platform adapters."""
 
-    def __init__(self, dry_run: bool = True):
+    def __init__(
+        self,
+        dry_run: bool = True,
+        state: TaskState | None = None,
+    ):
         self.dry_run = dry_run
+        self.state = state
 
     def execute_task(self, task_json: Dict[str, Any]) -> Dict[str, Any]:
         platform_name = task_json.get("platform")
         task_id = task_json.get("id", "unknown")
 
-        print(f"[executor] running: {platform_name} - {task_id}")
+        log.info("running: %s - %s", platform_name, task_id)
 
         platform_class = PLATFORM_MAP.get(platform_name)
         if not platform_class:
@@ -70,8 +75,22 @@ class TaskExecutor:
         try:
             with platform_class() as platform:
                 task = MicroworkTask(**task_json)
-                return platform.execute_task(task, dry_run=self.dry_run)
+                result = platform.execute_task(task, dry_run=self.dry_run)
+                # Record in dedup state
+                if self.state and result.get("status") in (
+                    "completed",
+                    "dry_run",
+                    "skipped",
+                ):
+                    self.state.mark_done(
+                        task_id,
+                        platform_name or "unknown",
+                        result["status"],
+                        task_json.get("reward"),
+                    )
+                return result
         except Exception as exc:  # noqa: BLE001
+            log.exception("task %s failed: %s", task_id, exc)
             return {
                 "task_id": task_id,
                 "platform": platform_name,
@@ -85,21 +104,20 @@ class TaskExecutor:
             result = self.execute_task(task)
             results.append(result)
 
-            # Persist per-task result so review_compiler can find it
             result_file = f"result_{task.get('id', 'unknown')}.json"
             try:
                 Path(result_file).write_text(
                     json.dumps(result, indent=2, default=str), encoding="utf-8"
                 )
-                print(f"[executor] saved {result_file}")
+                log.debug("saved %s", result_file)
             except Exception as exc:  # noqa: BLE001
-                print(f"[executor] failed to write {result_file}: {exc}")
+                log.error("failed to write %s: %s", result_file, exc)
         return results
 
     def execute_from_file(self, task_path: str) -> List[Dict[str, Any]]:
         payload = json.loads(Path(task_path).read_text(encoding="utf-8"))
         tasks = _coerce_to_task_list(payload)
-        print(f"[executor] loaded {len(tasks)} task(s) from {task_path}")
+        log.info("loaded %d task(s) from %s", len(tasks), task_path)
         return self.execute_many(tasks)
 
 
@@ -119,18 +137,26 @@ def main() -> int:
         default=True,
         help="true=dry-run (default), false=real submission",
     )
+    parser.add_argument(
+        "--state-file",
+        default="task_state.json",
+        help="Path to dedup state file (default: task_state.json)",
+    )
+    parser.add_argument(
+        "--no-state",
+        action="store_true",
+        help="Do not record task completions in state file",
+    )
     args = parser.parse_args()
 
-    executor = TaskExecutor(dry_run=args.dry_run)
+    state = None if args.no_state else TaskState(path=args.state_file)
+    executor = TaskExecutor(dry_run=args.dry_run, state=state)
     results = executor.execute_from_file(args.task)
 
     ok = sum(
-        1
-        for r in results
-        if r.get("status") in ("completed", "dry_run")
+        1 for r in results if r.get("status") in ("completed", "dry_run")
     )
-    print(f"\n[executor] {ok}/{len(results)} task(s) OK")
-
+    log.info("%d/%d task(s) OK", ok, len(results))
     return 0 if ok == len(results) and results else (1 if not results else 2)
 
 

@@ -12,6 +12,11 @@ import os
 import time
 from typing import Any, Dict, Optional
 
+from src.utils.logger import get_logger
+from src.utils.sanitizer import sanitize
+
+log = get_logger("ai")
+
 
 class FreeAIHelper:
     """Multi-provider free AI helper with automatic fallback."""
@@ -34,10 +39,11 @@ class FreeAIHelper:
                 genai.configure(api_key=gemini_key)
                 self.gemini = genai.GenerativeModel("gemini-1.5-flash")
                 self._genai = genai
+                log.info("Gemini client initialised")
             except ImportError:
-                print("[ai_helper] google-generativeai not installed; Gemini disabled")
+                log.warning("google-generativeai not installed; Gemini disabled")
             except Exception as exc:  # noqa: BLE001
-                print(f"[ai_helper] Gemini init failed: {exc}")
+                log.error("Gemini init failed: %s", sanitize(exc))
 
         groq_key = os.getenv("GROQ_API_KEY", "")
         if groq_key:
@@ -48,10 +54,11 @@ class FreeAIHelper:
                     api_key=groq_key,
                     base_url="https://api.groq.com/openai/v1",
                 )
+                log.info("Groq client initialised")
             except ImportError:
-                print("[ai_helper] openai not installed; Groq disabled")
+                log.warning("openai not installed; Groq disabled")
             except Exception as exc:  # noqa: BLE001
-                print(f"[ai_helper] Groq init failed: {exc}")
+                log.error("Groq init failed: %s", sanitize(exc))
 
     # ------------------------------------------------------------------ #
     # Public API
@@ -70,7 +77,9 @@ class FreeAIHelper:
                 try:
                     return self._call_gemini(prompt, system, json_mode)
                 except Exception as exc:  # noqa: BLE001
-                    errors.append(f"Gemini attempt {attempt + 1}: {exc}")
+                    err = f"Gemini attempt {attempt + 1}: {sanitize(exc)}"
+                    errors.append(err)
+                    log.warning("%s", err)
                     time.sleep(2 ** attempt)
 
         if self.groq:
@@ -78,13 +87,17 @@ class FreeAIHelper:
                 try:
                     return self._call_groq(prompt, system, json_mode)
                 except Exception as exc:  # noqa: BLE001
-                    errors.append(f"Groq attempt {attempt + 1}: {exc}")
+                    err = f"Groq attempt {attempt + 1}: {sanitize(exc)}"
+                    errors.append(err)
+                    log.warning("%s", err)
                     time.sleep(2 ** attempt)
 
         try:
             return self._call_jina(prompt)
         except Exception as exc:  # noqa: BLE001
-            errors.append(f"Jina: {exc}")
+            err = f"Jina: {sanitize(exc)}"
+            errors.append(err)
+            log.error("%s", err)
 
         raise RuntimeError(f"All free APIs failed: {'; '.join(errors)}")
 
