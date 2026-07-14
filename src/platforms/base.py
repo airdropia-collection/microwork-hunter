@@ -117,6 +117,40 @@ class BasePlatform(ABC):
         except Exception as exc:  # noqa: BLE001
             log.debug("log_page_info '%s' failed: %s", label, exc)
 
+    def _wait_for_cloudflare(self, timeout_sec: int = 15) -> bool:
+        """Wait for Cloudflare JS challenge to resolve.
+
+        Cloudflare shows 'Just a moment...' or 'Attention Required!'
+        while it runs a JS challenge. If we wait, it often auto-solves.
+
+        Returns True if the challenge was resolved (title changed),
+        False if it timed out.
+        """
+        if not self.page:
+            return False
+        import time as _time
+
+        cf_titles = ("just a moment", "attention required")
+        for _ in range(timeout_sec):
+            try:
+                title = self.page.title().lower()
+                if not any(cf in title for cf in cf_titles):
+                    return True  # challenge resolved
+            except Exception:  # noqa: BLE001
+                pass
+            _time.sleep(1)
+        # Final check
+        try:
+            title = self.page.title().lower()
+            resolved = not any(cf in title for cf in cf_titles)
+            if resolved:
+                log.info("cloudflare challenge resolved after %ds", timeout_sec)
+            else:
+                log.warning("cloudflare challenge NOT resolved after %ds", timeout_sec)
+            return resolved
+        except Exception:  # noqa: BLE001
+            return False
+
     def start_browser(self):
         """Start browser with cookies"""
         from src.browser import get_browser

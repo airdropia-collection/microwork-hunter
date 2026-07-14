@@ -37,6 +37,7 @@ class TimeBucksPlatform(BasePlatform):
         try:
             self.page.goto(f"{self.base_url}/publishers/index.php?pg=earn&tab=videos", timeout=20000)
             self._human_delay(2, 4)
+            self._wait_for_cloudflare(timeout_sec=15)
             self._log_page_info("timebucks_videos")
             video_items = self.page.locator(".video-item, [class*='video'], .task-row").all()
             log.info("timebucks: found %d video item(s)", len(video_items))

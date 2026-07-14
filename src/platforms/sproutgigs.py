@@ -30,6 +30,8 @@ class SproutGigsPlatform(BasePlatform):
         try:
             self.page.goto(f"{self.base_url}/micro-jobs", timeout=20000)
             self._human_delay(3, 5)
+            # Wait for Cloudflare JS challenge to resolve
+            self._wait_for_cloudflare(timeout_sec=15)
             self._log_page_info("sproutgigs_jobs")
 
             # Extract job cards
