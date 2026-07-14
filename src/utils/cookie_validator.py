@@ -40,6 +40,10 @@ class CookieValidator:
             "url": "https://www.prizerebel.com",
             "login_indicator": "members",
         },
+        "cointiply": {
+            "url": "https://cointiply.com",
+            "login_indicator": "dashboard",
+        },
     }
 
     def validate_all(self) -> dict:

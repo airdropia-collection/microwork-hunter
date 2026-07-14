@@ -34,6 +34,14 @@ class Config:
     MAX_TASK_TIME_MIN: int = int(os.getenv("MAX_TASK_TIME_MIN", "30"))
     DRY_RUN: bool = os.getenv("DRY_RUN", "true").lower() == "true"
 
+    # === SOCIAL TASKS (HIGH RISK — disabled by default) ===
+    # When true, the task filter will NOT reject FB/IG/TikTok/Twitter/etc.
+    # tasks. You must also provide the corresponding COOKIES_FACEBOOK,
+    # COOKIES_INSTAGRAM, COOKIES_TIKTOK, COOKIES_TELEGRAM, COOKIES_TWITTER,
+    # COOKIES_YOUTUBE, etc. secrets.
+    # WARNING: enabling this dramatically increases account-ban risk.
+    ENABLE_SOCIAL_TASKS: bool = os.getenv("ENABLE_SOCIAL_TASKS", "false").lower() == "true"
+
     # === PAYMENT ===
     LTC_ADDRESS: str = os.getenv("LTC_ADDRESS", "")
 

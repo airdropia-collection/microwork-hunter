@@ -25,19 +25,30 @@ Usage
 
 Patterns
 --------
-Two pattern sets are maintained:
+Three pattern sets are maintained:
 
 1. ``BLOCKLIST`` — phrases that indicate manual intervention is required.
    Matched (case-insensitive) against the task's title, description,
    requirements, and tags. If ANY blocklist pattern matches, the task
    is rejected.
 
-2. ``ALLOWLIST`` — phrases that strongly indicate the task is
+2. ``SOCIAL_BLOCKLIST`` — phrases that indicate the task requires
+   interaction with a third-party social platform (Facebook, Instagram,
+   TikTok, Telegram, etc.). These are blocked **by default** because:
+     - Social platforms have aggressive anti-bot detection
+     - Account-ban risk is high
+     - Each platform would need its own cookie set
+     - TOS violations
+   To enable social tasks, set ``ENABLE_SOCIAL_TASKS=true`` in env
+   or GitHub Secrets.
+
+3. ``ALLOWLIST`` — phrases that strongly indicate the task is
    auto-completable. Used for the ``confidence`` score, not for the
    final decision (the absence of blocklist matches is enough).
 """
 from __future__ import annotations
 
+import os
 import re
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
@@ -143,6 +154,92 @@ BLOCKLIST: List[str] = [
 ]
 
 
+# ---------------------------------------------------------------------- #
+# Social-media tasks — blocked BY DEFAULT
+# ---------------------------------------------------------------------- #
+# These tasks require the bot to log in to a third-party social platform
+# (Facebook, Instagram, TikTok, Telegram, X/Twitter, YouTube, Reddit, etc.)
+# and perform an action (like, share, follow, comment, subscribe).
+#
+# Why blocked by default?
+#   1. Each platform needs its own cookie set (more secrets to manage)
+#   2. Social platforms have very aggressive anti-bot detection — accounts
+#      get banned fast
+#   3. TOS violations — every major social platform forbids automation
+#   4. Cookie expiry is fast (hours/days), bot would fail constantly
+#   5. Low reward ($0.001-$0.01) vs. high account-ban risk
+#
+# To enable social tasks (NOT recommended):
+#   Set environment variable  ENABLE_SOCIAL_TASKS=true
+#   Or add GitHub Secret        ENABLE_SOCIAL_TASKS = true
+#
+# Even when enabled, you must provide cookies for each platform you want
+# to automate via separate secrets:
+#   COOKIES_FACEBOOK, COOKIES_INSTAGRAM, COOKIES_TIKTOK,
+#   COOKIES_TELEGRAM, COOKIES_TWITTER, COOKIES_YOUTUBE, etc.
+SOCIAL_BLOCKLIST: List[str] = [
+    # --- Facebook ---
+    r"\bfacebook\s+(like|share|comment|post|follow|page|group)\b",
+    r"\bfb\s+(like|share|comment|post|follow|page|group)\b",
+    r"\blike\s+(our\s+)?facebook\b",
+    r"\bshare\s+(on\s+)?facebook\b",
+    r"\bfollow\s+(us\s+on\s+)?facebook\b",
+    r"\bjoin\s+(our\s+)?facebook\s+group\b",
+
+    # --- Instagram ---
+    r"\binstagram\s+(like|follow|comment|post|story|reel)\b",
+    r"\binsta\s+(like|follow|comment|post|story|reel)\b",
+    r"\blike\s+(our\s+)?instagram\b",
+    r"\bfollow\s+(us\s+on\s+)?instagram\b",
+    r"\binsta\s+follow\b",
+
+    # --- TikTok ---
+    r"\btiktok\s+(like|follow|comment|share|video)\b",
+    r"\blike\s+(our\s+)?tiktok\b",
+    r"\bfollow\s+(us\s+on\s+)?tiktok\b",
+    r"\bwatch\s+(our\s+)?tiktok\b",
+
+    # --- Telegram ---
+    r"\btelegram\s+(channel|group|join|subscribe)\b",
+    r"\bjoin\s+(our\s+)?telegram\b",
+    r"\bsubscribe\s+(to\s+)?telegram\b",
+
+    # --- Twitter / X ---
+    r"\btwitter\s+(follow|retweet|like|tweet|post)\b",
+    r"\bx\s+(follow|retweet|like|tweet)\b",
+    r"\bfollow\s+(us\s+on\s+)?twitter\b",
+    r"\bretweet\b",
+    r"\btweet\s+(about|us)\b",
+
+    # --- YouTube ---
+    r"\byoutube\s+(subscribe|like|comment|watch)\b",
+    r"\bsubscribe\s+(to\s+)?(our\s+)?youtube\b",
+    r"\blike\s+(our\s+)?youtube\b",
+    r"\bwatch\s+(our\s+)?youtube\s+video\b",
+
+    # --- Reddit ---
+    r"\breddit\s+(upvote|post|comment|subscribe)\b",
+    r"\bupvote\s+(our\s+)?reddit\b",
+    r"\bjoin\s+(our\s+)?subreddit\b",
+
+    # --- LinkedIn ---
+    r"\blinkedin\s+(connect|follow|like|share)\b",
+    r"\bconnect\s+(with\s+us\s+)?on\s+linkedin\b",
+    r"\bconnect\s+(on\s+)?linkedin\b",
+
+    # --- Pinterest / Snapchat / Discord ---
+    r"\bpinterest\s+(pin|follow|save)\b",
+    r"\bsnapchat\s+(add|follow|snap)\b",
+    r"\bdiscord\s+(join|server)\b",
+    r"\bjoin\s+(our\s+)?discord\b",
+
+    # --- Generic social actions (catch-all) ---
+    r"\bsocial\s+media\s+(like|follow|share|comment)\b",
+    r"\bsocial\s+share\b",
+    r"\bsubscribe\s+(to\s+)?(our\s+)?channel\b",
+]
+
+
 # Tasks that we KNOW we can automate (used for confidence scoring only).
 ALLOWLIST: List[str] = [
     r"\bptc\s+ad\b",
@@ -193,11 +290,36 @@ class FilterDecision:
 class TaskFilter:
     """Classify tasks as auto-completable or manual-intervention-required."""
 
-    def __init__(self):
+    def __init__(self, enable_social: Optional[bool] = None):
+        """
+        Args:
+            enable_social: Whether to allow social-media tasks.
+                If None, reads from env var ``ENABLE_SOCIAL_TASKS``
+                (default: false).
+        """
+        # Resolve the social flag
+        if enable_social is None:
+            enable_social = os.getenv("ENABLE_SOCIAL_TASKS", "false").lower() == "true"
+        self.enable_social = enable_social
+
         # Compile patterns once at construction
         self._block_patterns = [
             re.compile(p, re.IGNORECASE) for p in BLOCKLIST
         ]
+        # Social patterns only active if social tasks are NOT enabled
+        if not self.enable_social:
+            self._social_patterns = [
+                re.compile(p, re.IGNORECASE) for p in SOCIAL_BLOCKLIST
+            ]
+        else:
+            self._social_patterns = []
+            log.warning(
+                "social tasks ENABLED — bot may attempt FB/IG/TikTok/etc. "
+                "actions. Make sure you have provided the corresponding "
+                "COOKIES_FACEBOOK / COOKIES_INSTAGRAM / etc. secrets. "
+                "Account-ban risk is HIGH."
+            )
+
         self._allow_patterns = [
             re.compile(p, re.IGNORECASE) for p in ALLOWLIST
         ]
@@ -215,7 +337,7 @@ class TaskFilter:
         """
         text = self._task_to_text(task)
 
-        # 1. Check blocklist (any match -> reject)
+        # 1. Check hard blocklist (any match -> reject)
         for pattern in self._block_patterns:
             m = pattern.search(text)
             if m:
@@ -231,7 +353,24 @@ class TaskFilter:
                     matched_block=m.group(),
                 )
 
-        # 2. Score confidence using allowlist
+        # 2. Check social blocklist (only if social tasks are disabled)
+        for pattern in self._social_patterns:
+            m = pattern.search(text)
+            if m:
+                reason = (
+                    f"Social-media task matched: '{m.group()}' "
+                    f"(blocked by default — set ENABLE_SOCIAL_TASKS=true "
+                    f"to allow, but account-ban risk is high)"
+                )
+                log.debug("rejected task %s: %s", task.get("id", "?"), reason)
+                return FilterDecision(
+                    allowed=False,
+                    reason=reason,
+                    confidence=0.0,
+                    matched_block=m.group(),
+                )
+
+        # 3. Score confidence using allowlist
         allow_matches: List[str] = []
         for pattern in self._allow_patterns:
             m = pattern.search(text)

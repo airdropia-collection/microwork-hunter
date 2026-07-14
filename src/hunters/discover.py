@@ -22,6 +22,7 @@ from src.platforms.sproutgigs import SproutGigsPlatform
 from src.platforms.coinpayu import CoinPayuPlatform
 from src.platforms.timebucks import TimeBucksPlatform
 from src.platforms.prizerebel import PrizeRebelPlatform
+from src.platforms.cointiply import CointiplyPlatform
 from src.utils.logger import get_logger
 from src.utils.state import TaskState
 from src.utils.task_filter import TaskFilter
@@ -33,6 +34,7 @@ PLATFORM_MAP = {
     "coinpayu": CoinPayuPlatform,
     "timebucks": TimeBucksPlatform,
     "prizerebel": PrizeRebelPlatform,
+    "cointiply": CointiplyPlatform,
 }
 
 TASKS_QUEUE_DIR = Path("tasks_queue")
@@ -88,7 +90,7 @@ def main() -> int:
     parser.add_argument(
         "--platform",
         default="all",
-        choices=["all", "sproutgigs", "coinpayu", "timebucks", "prizerebel"],
+        choices=["all", "sproutgigs", "coinpayu", "timebucks", "prizerebel", "cointiply"],
     )
     parser.add_argument("--max-tasks", type=int, default=5)
     parser.add_argument(

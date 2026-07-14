@@ -9,7 +9,7 @@ on:
         description: 'Platform'
         default: 'all'
         type: choice
-        options: [all, sproutgigs, coinpayu, timebucks, prizerebel]
+        options: [all, sproutgigs, coinpayu, timebucks, prizerebel, cointiply]
       dry_run:
         description: 'Dry Run (safe default)'
         default: true
@@ -67,13 +67,28 @@ jobs:
           COINPAYU: ${{ secrets.COOKIES_COINPAYU }}
           TIMEBUCKS: ${{ secrets.COOKIES_TIMEBUCKS }}
           PRIZEREBEL: ${{ secrets.COOKIES_PRIZEREBEL }}
+          COINTIPLY: ${{ secrets.COOKIES_COINTIPLY }}
+          # Optional social media cookies (only used if ENABLE_SOCIAL_TASKS=true)
+          FACEBOOK: ${{ secrets.COOKIES_FACEBOOK }}
+          INSTAGRAM: ${{ secrets.COOKIES_INSTAGRAM }}
+          TIKTOK: ${{ secrets.COOKIES_TIKTOK }}
+          TELEGRAM: ${{ secrets.COOKIES_TELEGRAM }}
+          TWITTER: ${{ secrets.COOKIES_TWITTER }}
+          YOUTUBE: ${{ secrets.COOKIES_YOUTUBE }}
         run: |
           mkdir -p cookies
           for pair in \
             "sproutgigs:$SPROUTGIGS" \
             "coinpayu:$COINPAYU" \
             "timebucks:$TIMEBUCKS" \
-            "prizerebel:$PRIZEREBEL"; do
+            "prizerebel:$PRIZEREBEL" \
+            "cointiply:$COINTIPLY" \
+            "facebook:$FACEBOOK" \
+            "instagram:$INSTAGRAM" \
+            "tiktok:$TIKTOK" \
+            "telegram:$TELEGRAM" \
+            "twitter:$TWITTER" \
+            "youtube:$YOUTUBE"; do
             name="${pair%%:*}"
             b64="${pair#*:}"
             if [ -n "$b64" ]; then
@@ -91,6 +106,7 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           BROWSER_TYPE: obscura
           OBSCURA_PORT: 9222
+          ENABLE_SOCIAL_TASKS: ${{ secrets.ENABLE_SOCIAL_TASKS }}
         run: |
           python -m src.utils.health || true
 
@@ -108,6 +124,7 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           BROWSER_TYPE: obscura
           OBSCURA_PORT: 9222
+          ENABLE_SOCIAL_TASKS: ${{ secrets.ENABLE_SOCIAL_TASKS }}
         run: |
           python -m src.hunters.discover \
             --platform "${{ github.event.inputs.platform || 'all' }}" \
@@ -121,6 +138,7 @@ jobs:
           BROWSER_TYPE: obscura
           OBSCURA_PORT: 9222
           DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
+          ENABLE_SOCIAL_TASKS: ${{ secrets.ENABLE_SOCIAL_TASKS }}
         run: |
           python -m src.workers.executor \
             --task tasks_found.json \

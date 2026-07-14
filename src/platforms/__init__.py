@@ -5,6 +5,7 @@ from .sproutgigs import SproutGigsPlatform
 from .coinpayu import CoinPayuPlatform
 from .timebucks import TimeBucksPlatform
 from .prizerebel import PrizeRebelPlatform
+from .cointiply import CointiplyPlatform
 
 __all__ = [
     "BasePlatform",
@@ -13,4 +14,5 @@ __all__ = [
     "CoinPayuPlatform",
     "TimeBucksPlatform",
     "PrizeRebelPlatform",
+    "CointiplyPlatform",
 ]

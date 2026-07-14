@@ -21,6 +21,7 @@ from src.platforms.sproutgigs import SproutGigsPlatform
 from src.platforms.coinpayu import CoinPayuPlatform
 from src.platforms.timebucks import TimeBucksPlatform
 from src.platforms.prizerebel import PrizeRebelPlatform
+from src.platforms.cointiply import CointiplyPlatform
 from src.platforms.base import MicroworkTask
 from src.utils.logger import get_logger
 from src.utils.state import TaskState
@@ -32,6 +33,7 @@ PLATFORM_MAP = {
     "coinpayu": CoinPayuPlatform,
     "timebucks": TimeBucksPlatform,
     "prizerebel": PrizeRebelPlatform,
+    "cointiply": CointiplyPlatform,
 }
 
 

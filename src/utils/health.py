@@ -89,7 +89,20 @@ def _check_browser() -> Check:
 
 
 def _check_cookie(platform: str) -> Check:
-    cookies = getattr(CONFIG, f"cookies_{platform}", [])
+    import os
+    from pathlib import Path
+
+    # Try CONFIG.cookies_<platform> first (works for sproutgigs/coinpayu/etc.)
+    cookies = getattr(CONFIG, f"cookies_{platform}", None)
+    if cookies is None:
+        # Cointiply and other platforms not yet on CONFIG — check env directly
+        env_var = f"COOKIES_{platform.upper()}"
+        if os.getenv(env_var):
+            cookies = [{"_source": "env"}]  # truthy placeholder
+        elif Path(f"cookies/{platform}_cookies.json").exists():
+            cookies = [{"_source": "file"}]
+        else:
+            cookies = []
     if cookies:
         return Check(
             f"cookies_{platform}",
@@ -118,7 +131,7 @@ def run_all_checks() -> List[Check]:
     checks: List[Check] = []
     checks.append(_check_llm_keys())
     checks.append(_check_browser())
-    for platform in ("sproutgigs", "coinpayu", "timebucks", "prizerebel"):
+    for platform in ("sproutgigs", "coinpayu", "timebucks", "prizerebel", "cointiply"):
         checks.append(_check_cookie(platform))
     return checks
 
